@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extra Miles AI SEO Dashboard</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#667085;--line:#e7eaf0;--accent:#2563eb;--good:#16a34a;--warn:#d97706;--bad:#dc2626}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text)}
+.header{background:#111827;color:#fff;padding:22px 18px}.header h1{margin:0;font-size:22px}.header p{margin:5px 0 0;color:#cbd5e1;font-size:13px}
+.wrap{max-width:1180px;margin:auto;padding:18px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 2px 8px #00000008}.label{font-size:12px;color:var(--muted)}.num{font-size:30px;font-weight:750;margin-top:7px}
+.score{display:flex;align-items:center;gap:18px}.circle{width:82px;height:82px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) calc(var(--score)*1%),#e8edf7 0);position:relative}.circle:after{content:"";position:absolute;width:64px;height:64px;background:#fff;border-radius:50%}.circle span{position:relative;z-index:1;font-weight:800}
+.section{margin-top:18px}.section h2{font-size:17px;margin:0 0 12px}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.action{padding:15px;border:1px solid var(--line);border-radius:14px;background:#fff}.action b{display:block;margin-bottom:5px}.action small{color:var(--muted);line-height:1.45}.btn{border:0;background:var(--accent);color:#fff;padding:9px 12px;border-radius:9px;margin-top:10px;cursor:pointer;font-weight:650}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}th,td{padding:11px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}th{background:#f8fafc;color:#475467}tr:last-child td{border-bottom:0}.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700}.good{background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.bad{background:#fee2e2;color:#991b1b}.search{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}
+.notice{padding:13px 15px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;color:#1e40af;font-size:13px}
+@media(max-width:800px){.cards{grid-template-columns:repeat(2,1fr)}.actions{grid-template-columns:1fr}.wrap{padding:12px}th:nth-child(n+5),td:nth-child(n+5){display:none}}
+
+.modal{display:none;position:fixed;inset:0;background:#0f172acc;z-index:9999;padding:18px;overflow:auto}
+.modal.open{display:flex;align-items:flex-start;justify-content:center}
+.modalBox{width:min(1050px,100%);background:#fff;border-radius:18px;margin:20px auto;padding:20px;box-shadow:0 20px 70px #0004}
+.modalHead{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}
+.closeBtn{border:0;background:#f1f5f9;border-radius:10px;font-size:24px;width:40px;height:40px;cursor:pointer}
+.aiToolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.select{flex:1;min-width:260px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fff}
+.secondary{background:#475569}
+.fixGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fixCard{border:1px solid var(--line);border-radius:13px;padding:14px;background:#fff}
+.fixCard h3{margin:0 0 7px;font-size:14px}
+.fixValue{background:#f8fafc;border:1px solid var(--line);padding:10px;border-radius:9px;font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.copyBtn{border:1px solid var(--line);background:#fff;padding:7px 10px;border-radius:8px;cursor:pointer;margin-top:8px}
+.aiNote{margin-top:14px;padding:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;font-size:12px;color:#78350f}
+.issueRow{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+@media(max-width:700px){.fixGrid{grid-template-columns:1fr}.modalBox{padding:14px}}
+</style>
+</head>
+<body>
+<div class="header"><div class="wrap"><h1>Extra Miles AI SEO</h1><p>Dashboard v2 • AI Fix preparation</p></div></div>
+<div class="wrap">
+  <div class="notice">SEO audit is loaded below. Connect Google Search Console to bring live clicks, impressions, CTR and search queries into this dashboard.</div>
+
+  <div class="cards section">
+    <div class="card score"><div class="circle" id="circle"><span id="score"></span></div><div><div class="label">Average SEO Score</div><div class="num" id="scoreText"></div></div></div>
+    <div class="card"><div class="label">Pages Scanned</div><div class="num" id="pages"></div></div>
+    <div class="card"><div class="label">SEO Problems</div><div class="num" id="problems"></div></div>
+    <div class="card"><div class="label">Good Pages</div><div class="num" id="good"></div></div>
+  </div>
+
+  <div class="section"><h2>Priority Issues</h2><div class="cards" id="issues"></div></div>
+
+  <div class="section"><h2>Google Search Console</h2>
+    <div class="card" id="gscCard">
+      <div class="label">Live Google Search Console data</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" id="gscConnect" onclick="connectGSC()">🔗 Connect Google Search Console</button><span id="gscStatus" class="badge warn">Not connected</span></div>
+      <div id="gscData" style="margin-top:14px;display:none">
+        <div class="cards" style="grid-template-columns:repeat(4,1fr)">
+          <div class="card"><div class="label">Clicks (28 days)</div><div class="num" id="gscClicks">—</div></div>
+          <div class="card"><div class="label">Impressions</div><div class="num" id="gscImpressions">—</div></div>
+          <div class="card"><div class="label">CTR</div><div class="num" id="gscCTR">—</div></div>
+          <div class="card"><div class="label">Avg position</div><div class="num" id="gscPosition">—</div></div>
+        </div>
+        <div style="margin-top:14px;overflow:auto"><table><thead><tr><th>Top query</th><th>Clicks</th><th>Impressions</th><th>CTR</th><th>Position</th></tr></thead><tbody id="gscQueries"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section"><h2>AI Actions</h2>
+    <div class="actions">
+      <div class="action"><b>🤖 AI Fix Suggestions</b><small>Generate page-specific SEO fixes for title, meta, H1, canonical, schema, content and internal links.</small><br><button class="btn" onclick="openAIFix()">✨ Open AI Fix</button></div>
+      <div class="action"><b>🔎 Google Search Console</b><small>Connect clicks, impressions, CTR and keyword positions to this dashboard.</small><br><button class="btn" onclick="connectGSC()">Connect / Refresh</button></div>
+      <div class="action"><b>✍️ Content Opportunities</b><small>Use your audit + Search Console queries to identify pages worth improving first.</small><br><button class="btn" onclick="openAIFix('content')">Find Opportunities</button></div>
+    </div>
+  </div>
+
+  <div class="section"><h2>AI Fix Queue</h2>
+    <div class="card">
+      <div class="label">Pages with actionable SEO issues</div>
+      <div id="aiQueue" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <div class="section"><h2>Pages</h2><input class="search" id="search" placeholder="Search pages..." oninput="renderTable()"><div style="overflow:auto"><table><thead><tr><th>Page</th><th>Score</th><th>Words</th><th>H1</th><th>Canonical</th><th>Schema</th><th>Issues</th></tr></thead><tbody id="table"></tbody></table></div></div>
+</div>
+<script src="https://accounts.google.com/gsi/client" async defer>
+let currentAIFix=null;
+
+function pageUrl(file){
+  return 'https://extramilesenergy.in/' + String(file||'').replace(/^\/+/,'');
+}
+function pageKeywords(p){
+  const f=(p.file||'').replace(/\.html$/,'').split('/').pop().replace(/[-_]+/g,' ');
+  const title=(p.title||'').replace(/\|.*$/,'').replace(/[|–—]/g,' ');
+  const words=(title+' '+f).replace(/[^\w\u0900-\u097F\s]/g,' ').split(/\s+/).filter(Boolean);
+  const stop=new Set(['the','for','and','with','in','of','to','a','an','best','extra','miles','energy','2026','india']);
+  return [...new Set(words.filter(w=>w.length>2 && !stop.has(w.toLowerCase())))].slice(0,6);
+}
+function smartTitle(p){
+  const kw=pageKeywords(p);
+  let base=kw.join(' ').replace(/\b\w/g,c=>c.toUpperCase());
+  if(/battery/i.test(p.file+' '+p.title)) return `${base} | Extra Miles Energy`;
+  if(/solar|inverter/i.test(p.file+' '+p.title)) return `${base} | Extra Miles Energy`;
+  return `${base || 'Extra Miles Energy'} | Extra Miles Energy`;
+}
+function smartMeta(p){
+  const kw=pageKeywords(p).slice(0,4).join(', ');
+  return `Explore ${kw || 'lithium batteries and solar solutions'} from Extra Miles Energy. Get specifications, benefits, pricing guidance and expert help for your requirement in India.`;
+}
+function smartH1(p){
+  if(p.title) return p.title.replace(/\s*\|.*$/,'').replace(/[⚡🔋]/g,'').trim();
+  const kw=pageKeywords(p);
+  return kw.length ? kw.map(x=>x[0].toUpperCase()+x.slice(1)).join(' ') : 'Extra Miles Energy';
+}
+function buildSchema(p){
+  const isProduct=/^products\//i.test(p.file);
+  const isBlog=/^(blogs?|blog)\//i.test(p.file);
+  if(isProduct){
+    return `<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"Product",
+  "name":${JSON.stringify((p.title||'').replace(/\s*\|.*$/,''))},
+  "brand":{"@type":"Brand","name":"Extra Miles Energy"},
+  "url":${JSON.stringify(pageUrl(p.file))}
+}
+</script>`;
+  }
+  if(isBlog){
+    return `<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"Article",
+  "headline":${JSON.stringify((p.title||'').replace(/\s*\|.*$/,''))},
+  "author":{"@type":"Organization","name":"Extra Miles Energy"},
+  "publisher":{"@type":"Organization","name":"Extra Miles Energy"},
+  "mainEntityOfPage":${JSON.stringify(pageUrl(p.file))}
+}
+</script>`;
+  }
+  return `<link rel="canonical" href="${pageUrl(p.file)}">`;
+}
+function generateAIFixData(p){
+  const issues=(p.issues||'').split(';').map(x=>x.trim()).filter(Boolean);
+  const fix={
+    file:p.file,
+    url:pageUrl(p.file),
+    current:{title:p.title||'',words:p.words,h1:p.h1,canonical:p.canonical,schema:p.schema,issues},
+    recommendations:[],
+    generatedAt:new Date().toISOString()
+  };
+  if(issues.includes('missing title')||!p.title) fix.recommendations.push({type:'Title',value:smartTitle(p),reason:'Add a clear, search-focused title with the main topic and brand.'});
+  if(issues.includes('title length')) fix.recommendations.push({type:'Title',value:smartTitle(p),reason:'Shorten/rewrite the title to reduce unnecessary length while keeping the primary topic.'});
+  if(issues.includes('missing meta')||issues.includes('meta length')) fix.recommendations.push({type:'Meta description',value:smartMeta(p),reason:'Create a unique description focused on search intent and the page topic.'});
+  if(issues.includes('missing H1')) fix.recommendations.push({type:'H1',value:smartH1(p),reason:'Add exactly one descriptive primary heading.'});
+  if(issues.includes('multiple H1')) fix.recommendations.push({type:'H1',value:smartH1(p),reason:'Keep one primary H1 and convert other top-level headings to H2/H3.'});
+  if(issues.includes('missing canonical')) fix.recommendations.push({type:'Canonical',value:pageUrl(p.file),reason:'Add a self-referencing canonical URL to consolidate duplicate URL signals.'});
+  if(issues.includes('missing schema')) fix.recommendations.push({type:'Schema',value:buildSchema(p),reason:'Add relevant structured data based on the page type.'});
+  if(issues.includes('low content')){
+    fix.recommendations.push({type:'Content',value:`Expand this page beyond ${Math.max(300,p.words||0)} words with useful, original sections covering: ${pageKeywords(p).join(', ') || 'product details, benefits, specifications, FAQs and buying guidance'}.`,reason:'The audit flags thin content; add genuinely useful information rather than filler.'});
+  }
+  fix.recommendations.push({type:'Internal links',value:`Add 2–4 contextual links to relevant Extra Miles Energy pages, using descriptive anchor text around ${pageKeywords(p).slice(0,3).join(', ') || 'the main topic'}.`,reason:'Strengthen topical relationships and crawl paths.'});
+  return fix;
+}
+function openAIFix(mode){
+  const modal=document.getElementById('aiModal');
+  const sel=document.getElementById('aiPageSelect');
+  const candidates=DATA.pages.filter(p=>p.issues).sort((a,b)=>a.score-b.score);
+  sel.innerHTML=candidates.map((p,i)=>`<option value="${i}">${esc(p.file)} — ${p.score}/100</option>`).join('');
+  sel._pages=candidates;
+  modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+  if(mode==='content') {
+    const idx=candidates.findIndex(p=>/low content|missing meta/i.test(p.issues||''));
+    if(idx>=0) sel.value=idx;
+  }
+  generateAIFix();
+}
+function closeAIFix(){
+  const m=document.getElementById('aiModal'); m.classList.remove('open'); m.setAttribute('aria-hidden','true');
+}
+function generateAIFix(){
+  const sel=document.getElementById('aiPageSelect');
+  const p=sel._pages?.[Number(sel.value)];
+  if(!p) return;
+  document.getElementById('aiLoading').style.display='block';
+  setTimeout(()=>{
+    currentAIFix=generateAIFixData(p);
+    document.getElementById('aiLoading').style.display='none';
+    document.getElementById('aiSubtitle').textContent=`${p.file} • Current score ${p.score}/100`;
+    document.getElementById('aiResult').innerHTML=`
+      <div class="card" style="margin-bottom:12px">
+        <div class="label">Detected issues</div>
+        ${(currentAIFix.current.issues.length?currentAIFix.current.issues:['No audit issue']).map(x=>`<div class="issueRow"><span>${esc(x)}</span><span class="badge warn">Fix</span></div>`).join('')}
+      </div>
+      <div class="fixGrid">
+        ${currentAIFix.recommendations.map((r,i)=>`
+          <div class="fixCard">
+            <h3>${esc(r.type)}</h3>
+            <div class="label">${esc(r.reason)}</div>
+            <div class="fixValue" id="fix-${i}">${esc(r.value)}</div>
+            <button class="copyBtn" onclick="copyFix(${i})">Copy</button>
+          </div>`).join('')}
+      </div>
+      <div style="margin-top:12px"><a class="btn" style="display:inline-block;text-decoration:none" href="${esc(currentAIFix.url)}" target="_blank" rel="noopener">Open Live Page ↗</a></div>
+    `;
+  },250);
+}
+function copyFix(i){
+  const r=currentAIFix?.recommendations?.[i]; if(!r)return;
+  navigator.clipboard?.writeText(r.value).then(()=>alert(r.type+' copied.'));
+}
+function downloadAIFix(){
+  if(!currentAIFix){generateAIFix();return;}
+  const blob=new Blob([JSON.stringify(currentAIFix,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='ai-fix-'+currentAIFix.file.replace(/[\/\\]/g,'-').replace(/\.html$/,'')+'.json';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function renderAIQueue(){
+  const el=document.getElementById('aiQueue'); if(!el)return;
+  const rows=DATA.pages.filter(p=>p.issues).sort((a,b)=>a.score-b.score).slice(0,10);
+  el.innerHTML=rows.map((p,i)=>`<div class="issueRow"><div><b>${esc(p.file)}</b><br><small>${esc(p.issues)}</small></div><div style="white-space:nowrap"><span class="badge ${p.score<70?'bad':'warn'}">${p.score}/100</span> <button class="copyBtn" onclick="openAIFix();document.getElementById('aiPageSelect').value=${i};generateAIFix()">AI Fix</button></div></div>`).join('');
+}
+renderAIQueue();
+</script>
+<script>
+const GOOGLE_CLIENT_ID = "356647750993-gh70s7tlcaj4q4qqg00m6msp03qmsd0r.apps.googleusercontent.com";
+const GSC_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
+let tokenClient;
+let accessToken = null;
+
+function setGscStatus(text, cls){ const el=document.getElementById('gscStatus'); el.textContent=text; el.className='badge '+cls; }
+function connectGSC(){
+  if(!window.google || !google.accounts || !google.accounts.oauth2){ setGscStatus('Google sign-in loading…','warn'); setTimeout(connectGSC,1000); return; }
+  tokenClient = google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID, scope:GSC_SCOPE, callback: async (resp)=>{
+    if(resp.error){ console.error(resp); setGscStatus('Connection failed','bad'); return; }
+    accessToken=resp.access_token; setGscStatus('Connected','good');
+    document.getElementById('gscConnect').textContent='🔄 Refresh Search Console';
+    await loadGSC();
+  }});
+  tokenClient.requestAccessToken({prompt:''});
+}
+async function gscFetch(url, options={}){
+  options.headers=Object.assign({'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},options.headers||{});
+  const r=await fetch(url,options); if(!r.ok) throw new Error((await r.text()).slice(0,500)); return r.json();
+}
+async function loadGSC(){
+  try{
+    const sites=await gscFetch('https://www.googleapis.com/webmasters/v3/sites');
+    const list=sites.siteEntry||[];
+    const preferred=list.find(x=>/extramilesenergy\.in/i.test(x.siteUrl));
+    if(!preferred){ setGscStatus('No Extra Miles property found','bad'); return; }
+    const site=preferred.siteUrl;
+    const end=new Date(); const start=new Date(); start.setDate(end.getDate()-28);
+    const fmt=d=>d.toISOString().slice(0,10);
+    const data=await gscFetch('https://www.googleapis.com/webmasters/v3/sites/'+encodeURIComponent(site)+'/searchAnalytics/query',{method:'POST',body:JSON.stringify({startDate:fmt(start),endDate:fmt(end),dimensions:['query'],rowLimit:10})});
+    const rows=data.rows||[];
+    const clicks=rows.reduce((a,r)=>a+(r.clicks||0),0); const imps=rows.reduce((a,r)=>a+(r.impressions||0),0);
+    const ctr=imps?clicks/imps:0; const pos=rows.length?rows.reduce((a,r)=>a+(r.position||0)*(r.impressions||0),0)/Math.max(imps,1):0;
+    document.getElementById('gscClicks').textContent=Math.round(clicks); document.getElementById('gscImpressions').textContent=Math.round(imps).toLocaleString(); document.getElementById('gscCTR').textContent=(ctr*100).toFixed(1)+'%'; document.getElementById('gscPosition').textContent=pos?pos.toFixed(1):'—';
+    document.getElementById('gscQueries').innerHTML=rows.map(r=>`<tr><td>${esc(r.keys?.[0]||'')}</td><td>${Math.round(r.clicks||0)}</td><td>${Math.round(r.impressions||0).toLocaleString()}</td><td>${((r.ctr||0)*100).toFixed(1)}%</td><td>${(r.position||0).toFixed(1)}</td></tr>`).join('');
+    document.getElementById('gscData').style.display='block';
+  }catch(e){ console.error(e); setGscStatus('Search Console error','bad'); alert('Google Search Console connection error. Please check that this website origin is authorized in Google Cloud and that your Google account has access to extramilesenergy.in.'); }
+}
+
+const DATA = {"summary": {"pages": 62, "missing_title": 1, "missing_meta": 4, "missing_h1": 1, "multiple_h1": 5, "missing_canonical": 16, "missing_schema": 17, "missing_alt": 0, "low_content": 6}, "avg_score": 89, "pages": [{"file": "terms-conditions.html", "score": 85, "title": "Terms & Conditions | Extra Miles Energy", "words": 189, "h1": 1, "canonical": false, "schema": 0, "missingAlt": 0, "issues": "missing canonical; missing schema; low content"}, {"file": "privacy-policy.html", "score": 85, "title": "Privacy Policy | Extra Miles Energy", "words": 171, "h1": 1, "canonical": false, "schema": 0, "missingAlt": 0, "issues": "missing canonical; missing schema; low content"}, {"file": "google29ba16aeb2a3b87d.html", "score": 50, "title": "", "words": 2, "h1": 0, "canonical": false, "schema": 0, "missingAlt": 0, "issues": "missing title; missing meta; missing H1; missing canonical; missing schema; low content"}, {"file": "return-policy.html", "score": 90, "title": "Return & Refund Policy | Extra Miles Energy", "words": 368, "h1": 1, "canonical": false, "schema": 0, "missingAlt": 0, "issues": "missing canonical; missing schema"}, {"file": "shipping-policy.html", "score": 85, "title": "Shipping Policy | Extra Miles Energy", "words": 389, "h1": 1, "canonical": false, "schema": 0, "missingAlt": 0, "issues": "meta length; missing canonical; missing schema"}, {"file": "price.html", "score": 85, "title": "⚡ Lithium Battery Price in Haryana – Electric Scooter, E-Rickshaw & ESS (2026) | Extra Miles Energy", "words": 199, "h1": 1, "canonical": true, "schema": 1, "missingAlt": 0, "issues": "title length; meta length; low content"}, {"file": "index.html", "score": 97, "title": "LiFePO4 Battery Manufacturer in Hisar | Extra Miles Energy", "words": 344, "h1": 2, "canonical": true, "schema": 4, "missingAlt": 0, "issues": "multiple H1"}, {"file": "admin/index.html", "score": 80, "title": "Admin Panel - Extra Miles Energy", "words": 522, "h1": 1, "canonical": false, "schema": 0, "missingAlt": 0, "issues": "missing meta; missing canonical; missing schema"}, {"file": "products/72volt-45ah-lithium-phosphate-battery-for-electric-scooter.html", "score": 90, "title": "72V 45Ah LiFePO4 Battery Price in Haryana | Heavy-Duty EV Battery 3.31 kWh", "words": 815, "h1": 1, "canonical": true, "schema": 5, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "products/lithium-battery-charger-al-672v-6a.html", "score": 90, "title": "67.2V 6A Lithium Battery Charger for 60V EV Battery | Extra Miles Energy", "words": 641, "h1": 1, "canonical": true, "schema": 4, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "products/60volt-45-ah-lithium-battery-pack-for-electric-scooter.html", "score": 90, "title": "60V 45Ah LiFePO4 Battery for Electric Scooter | Extra Miles Energy", "words": 390, "h1": 1, "canonical": true, "schema": 1, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "products/11kw-ess-battery-pack-for-home-and-business.html", "score": 70, "title": "11kw ESS Battery Pack For Home and Business | Extra Miles Energy", "words": 67, "h1": 1, "canonical": false, "schema": 0, "missingAlt": 0, "issues": "title length; missing meta; missing canonical; missing schema; low content"}, {"file": "products/high-power-72v-30ah-electric-scooter-battery-with-32140-cells.html", "score": 90, "title": "High Power 72V 30Ah Electric Scooter Battery with 32140 Cells | Extra Miles Energy", "words": 763, "h1": 1, "canonical": false, "schema": 1, "missingAlt": 0, "issues": "title length; missing canonical"}, {"file": "products/76volt-45ah-lithium-phosphate-battery-for-electric-scooter.html", "score": 90, "title": "76V 45Ah LiFePO4 Battery Price in Haryana | High-Performance EV Battery 3.46 kWh", "words": 829, "h1": 1, "canonical": true, "schema": 5, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "products/11kw-lithium-battery-home-energy-storage-system-ess-with-jk-bms.html", "score": 90, "title": "11kw Lithium Battery Home Energy Storage System (ESS) – with JK BMS | Extra Miles Energy", "words": 1137, "h1": 1, "canonical": false, "schema": 1, "missingAlt": 0, "issues": "title length; missing canonical"}, {"file": "products/lithium-battery-charger-al-84v-6a.html", "score": 90, "title": "84V 6A Lithium Battery Charger for 72V EV Battery | Extra Miles Energy", "words": 562, "h1": 1, "canonical": true, "schema": 3, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "products/e-rickshaw-lithium-battery.html", "score": 85, "title": "E-Rickshaw Lithium Battery | Extra Miles Energy", "words": 198, "h1": 1, "canonical": false, "schema": 0, "missingAlt": 0, "issues": "missing canonical; missing schema; low content"}, {"file": "products/60v-30ah-lifepo4.html", "score": 87, "title": "60V 30Ah LiFePO4 Lithium Battery for Electric Scooter | Extra Miles Energy", "words": 319, "h1": 2, "canonical": true, "schema": 0, "missingAlt": 0, "issues": "title length; multiple H1; missing schema"}, {"file": "products/Erikshabattery.html", "score": 87, "title": "E-Rickshaw Lithium Battery | Extra Miles Energy | Best Price in India", "words": 338, "h1": 2, "canonical": true, "schema": 0, "missingAlt": 0, "issues": "title length; multiple H1; missing schema"}, {"file": "products/ess-11kw-smart-bms-lithium-battery.html", "score": 95, "title": "ESS 11kW Smart BMS Lithium Battery | Extra Miles Energy Hisar", "words": 368, "h1": 1, "canonical": true, "schema": 3, "missingAlt": 0, "issues": "title length"}, {"file": "products/gootu-65kw-48v-hybrid-solar-inverter-pure-sine-wave-with-mppt.html", "score": 90, "title": "Gootu 6.5kW 48V Hybrid Solar Inverter - Pure Sine Wave MPPT | Extra Miles Energy", "words": 491, "h1": 1, "canonical": true, "schema": 1, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "products/60-volt-30ah-lithium-phosphate-battery-for-electric-scooter.html", "score": 95, "title": "60V 30Ah LiFePO4 Battery for Electric Scooter Price in Haryana | Extra Miles Energy", "words": 629, "h1": 1, "canonical": true, "schema": 4, "missingAlt": 0, "issues": "title length"}, {"file": "products/72v-30ah-lifepo4.html", "score": 82, "title": "72V 30Ah LiFePO4 Battery for Electric Scooter | Best Price India 2026 | Extra Miles Energy", "words": 589, "h1": 2, "canonical": true, "schema": 0, "missingAlt": 0, "issues": "title length; meta length; multiple H1; missing schema"}, {"file": "products/72volt-30ah-lithium-phosphate-battery-pack-for-electric-scooter.html", "score": 90, "title": "72V 30Ah LiFePO4 Battery for Electric Scooter | Extra Miles Energy", "words": 309, "h1": 1, "canonical": false, "schema": 1, "missingAlt": 0, "issues": "title length; missing canonical"}, {"file": "products/high-power-72v-30ah-electric-scooter-battery-pack.html", "score": 90, "title": "High Power 72V 30Ah Electric Scooter Battery Pack | Extra Miles Energy", "words": 761, "h1": 1, "canonical": false, "schema": 1, "missingAlt": 0, "issues": "title length; missing canonical"}, {"file": "products/512-volt-105-ah-lithium-batteries-for-e-rikshaw.html", "score": 90, "title": "51.2V 105Ah LiFePO4 E-Rickshaw Battery with GPS Tracking | Extra Miles Energy", "words": 947, "h1": 1, "canonical": true, "schema": 5, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "products/76v-45ah-lifepo4.html", "score": 82, "title": "76V 45Ah LiFePO4 Lithium Battery for Electric Scooter | Best Price ₹39,500 | Extra Miles Energy", "words": 352, "h1": 2, "canonical": true, "schema": 0, "missingAlt": 0, "issues": "title length; meta length; multiple H1; missing schema"}, {"file": "products/lithium-battery-charger-al-694v-6a.html", "score": 90, "title": "69.4V 6A Lithium Battery Charger for 60V EV Battery | Extra Miles Energy", "words": 553, "h1": 1, "canonical": true, "schema": 3, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/sodium-ion-battery-hindi.html", "score": 90, "title": "सोडियम-आयन बैटरी: CATL Naxtra की पूरी जानकारी, फायदे और भारत में संभावनाएं | एक्स्ट्रा माइल्स एनर्जी", "words": 1802, "h1": 1, "canonical": true, "schema": 1, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/lead-acid-vs-lifepo4-electric-scooter.html", "score": 80, "title": "Lead Acid vs LiFePO4 Battery for Electric Scooter | Best EV Battery India 2026", "words": 617, "h1": 1, "canonical": false, "schema": 0, "missingAlt": 0, "issues": "title length; meta length; missing canonical; missing schema"}, {"file": "blogs/best-ev-battery-manufacturer-in-hisar.html", "score": 90, "title": "Best EV Battery Manufacturer in Hisar 2026 | Lithium Battery Factory Haryana | ExtraMiles Energy", "words": 854, "h1": 1, "canonical": true, "schema": 5, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/electric-scooter-battery-1-year-problem-lifepo4-solution-haryana.html", "score": 90, "title": "Electric Scooter Battery Problem in 1 Year – LiFePO4 Solution Haryana | Extra Miles Energy", "words": 2232, "h1": 1, "canonical": true, "schema": 5, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/lithium-vs-tubular-battery-home-inverter-2026.html", "score": 100, "title": "Lithium vs Tubular Battery 2026 | Extra Miles Energy", "words": 547, "h1": 1, "canonical": true, "schema": 3, "missingAlt": 0, "issues": ""}, {"file": "blogs/72v-45ah-lithium-battery-electric-scooter.html", "score": 95, "title": "72V 45Ah Lithium Battery for Electric Scooter – Price, Range (90-120KM) & Guide 2026", "words": 481, "h1": 1, "canonical": true, "schema": 2, "missingAlt": 0, "issues": "title length"}, {"file": "blogs/on-grid-off-grid-hybrid-solar-system-guide-2026.html", "score": 95, "title": "On-Grid vs Off-Grid vs Hybrid Solar System - Complete Guide 2026 | Extramiles Energy", "words": 708, "h1": 1, "canonical": true, "schema": 2, "missingAlt": 0, "issues": "title length"}, {"file": "blogs/lithium-battery-cycle-life-guide.html", "score": 90, "title": "LiFePO4 Battery 4000+ Cycles Ka Matlab Kya Hota Hai? | Extra Miles Energy", "words": 897, "h1": 1, "canonical": false, "schema": 1, "missingAlt": 0, "issues": "title length; missing canonical"}, {"file": "blogs/best-inverter-battery-haryana-2026.html", "score": 90, "title": "हरियाणा में घर के लिए सबसे अच्छी इनवर्टर बैटरी 2026 | Lithium vs Tubular पूरी जानकारी | Extra Miles Energy", "words": 1059, "h1": 1, "canonical": true, "schema": 4, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/ev-scooty-lithium-battery-guide-2026.html", "score": 80, "title": "EV Scooty के लिए Best Lithium Battery कैसे चुनें? 2026 की पूरी गाइड | ExtraMiles Energy", "words": 725, "h1": 1, "canonical": false, "schema": 0, "missingAlt": 0, "issues": "title length; meta length; missing canonical; missing schema"}, {"file": "blogs/best-lithium-battery-for-home-inverter-2026.html", "score": 90, "title": "Best Lithium Battery for Home Inverter 2026 | LiFePO4 Battery Price & Benefits | Extra Miles Energy", "words": 713, "h1": 1, "canonical": true, "schema": 1, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/lifepo4-ev-solar-battery.html", "score": 75, "title": "LiFePO₄ Battery: भविष्य की सबसे स्मार्ट एनर्जी सोल्यूशन | Extra Miles Energy", "words": 640, "h1": 1, "canonical": false, "schema": 0, "missingAlt": 0, "issues": "title length; missing meta; missing canonical; missing schema"}, {"file": "blogs/lithium-vs-tubular-battery-home-inverter-2026-en.html", "score": 100, "title": "Lithium vs Tubular Battery 2026 | Extra Miles Energy", "words": 513, "h1": 1, "canonical": true, "schema": 3, "missingAlt": 0, "issues": ""}, {"file": "blogs/sodium-ion-battery.html", "score": 90, "title": "Sodium-Ion Battery: Complete Guide to CATL Naxtra, Benefits & Future in India | Extra Miles Energy", "words": 1554, "h1": 1, "canonical": true, "schema": 1, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/best-inverter-battery-haryana-2026-en.html", "score": 90, "title": "Best Inverter Battery for Home in India (2026) – Lithium vs Tubular Guide | Extra Miles Energy", "words": 1183, "h1": 1, "canonical": true, "schema": 4, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/how-to-increase-ev-battery-life.html", "score": 95, "title": "How to Increase Battery Life of Your EV | Extra Miles Energy", "words": 439, "h1": 1, "canonical": true, "schema": 0, "missingAlt": 0, "issues": "missing schema"}, {"file": "blogs/ev-battery-price-in-hisar-2026.html", "score": 90, "title": "LiFePO4 EV Battery Price in Hisar 2026 | 48V, 60V, 72V Battery Rate | ExtraMiles Energy", "words": 708, "h1": 1, "canonical": true, "schema": 1, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/6-5kw-hybrid-transformerless-inverter-guide-india.html", "score": 95, "title": "6.5kW Hybrid Inverter India – Transformerless Solar Inverter Guide (2026) | Extra Miles Energy", "words": 1102, "h1": 1, "canonical": true, "schema": 5, "missingAlt": 0, "issues": "title length"}, {"file": "blogs/lithium-battery-for-electric-scooter.html", "score": 95, "title": "Best Lithium Battery for Electric Scooter in India (2026) | LiFePO4 Guide", "words": 351, "h1": 1, "canonical": true, "schema": 3, "missingAlt": 0, "issues": "title length"}, {"file": "blogs/solar-subsidy-scheme-2026-india.html", "score": 90, "title": "Solar Subsidy Scheme 2026 India – Government Solar Panel Subsidy Guide | Extra Miles Energy", "words": 842, "h1": 1, "canonical": true, "schema": 4, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/best-lithium-battery-for-home-inverter-and-solar.html", "score": 85, "title": "Best Lithium Battery for Home Inverter & Solar System India 2026 | LiFePO4 Guide", "words": 959, "h1": 1, "canonical": true, "schema": 0, "missingAlt": 0, "issues": "title length; meta length; missing schema"}, {"file": "blogs/hybrid-solar-best-solution-2026.html", "score": 90, "title": "Hybrid Solar System – Best Solution for Haryana Homes 2026 | Extra Miles Energy", "words": 1691, "h1": 1, "canonical": true, "schema": 5, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/inverter-battery-maintenance-tips.html", "score": 90, "title": "Inverter Battery Maintenance Tips 2026 – Long Life Ka Formula | Extra Miles Energy", "words": 1617, "h1": 1, "canonical": true, "schema": 5, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/lithium-battery-price-hisar-2026.html", "score": 95, "title": "Lithium Battery Price in Hisar 2026 (Latest Rates & Buying Guide) | Extra Miles Energy", "words": 1449, "h1": 1, "canonical": true, "schema": 4, "missingAlt": 0, "issues": "title length"}, {"file": "blogs/hybrid-solar-price-india-2026.html", "score": 90, "title": "Hybrid Solar System: India's Best Renewable Energy Solution 2026 | Extramiles Energy", "words": 1331, "h1": 1, "canonical": true, "schema": 3, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/lithium-phosphate-battery-vs-lead-acid-ev-scooter.html", "score": 95, "title": "EV Scooter के लिए Lithium Phosphate Battery क्यों खरीदें? Lead Acid अब महंगी हो चुकी है (2026)", "words": 1722, "h1": 1, "canonical": true, "schema": 5, "missingAlt": 0, "issues": "title length"}, {"file": "blogs/solar-panel-installation-mistakes-to-avoid.html", "score": 90, "title": "Solar Panel Installation Mistakes to Avoid (2026 Guide) | Extra Miles Energy", "words": 865, "h1": 1, "canonical": true, "schema": 4, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/lead-acid-battery-1-year-problem-lifepo4-solution-haryana-2026.html", "score": 90, "title": "Electric Scooter Battery 1-1.5 साल में खराब क्यों होती है? Haryana में LiFePO4 समाधान 2026", "words": 1835, "h1": 1, "canonical": true, "schema": 3, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/e-rickshaw-battery-price-haryana-2026.html", "score": 90, "title": "E-Rickshaw Battery Price in Haryana 2026 | Lithium vs Lead Acid Cost | Extra Miles Energy", "words": 965, "h1": 1, "canonical": true, "schema": 3, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/e-rickshaw-battery-price-india-2026.html", "score": 90, "title": "E Rickshaw Battery Price in India 2026 (Latest) | Lithium vs Lead Acid Cost", "words": 1627, "h1": 1, "canonical": true, "schema": 5, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/best-hybrid-solar-inverter-for-home-india-gootu-6kw-review.html", "score": 90, "title": "Best Hybrid Solar Inverter for Home in India 2026 – GOOTU 5KW/6KW Review & Price", "words": 805, "h1": 1, "canonical": true, "schema": 2, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blogs/3kw-solar-system-price-india.html", "score": 90, "title": "3kW Solar System Price in India 2026 (With Subsidy) | Extra Miles Energy", "words": 714, "h1": 1, "canonical": true, "schema": 4, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blog/72v-45ah-lithium-battery.html", "score": 90, "title": "72V 45Ah Lithium Battery Price in Haryana – Extra Miles Energy", "words": 1107, "h1": 1, "canonical": true, "schema": 5, "missingAlt": 0, "issues": "title length; meta length"}, {"file": "blog/on-grid-off-grid-hybrid-solar-comparison.html", "score": 90, "title": "On-Grid vs Off-Grid vs Hybrid Solar System Comparison 2026 | Extra Miles Energy", "words": 1756, "h1": 1, "canonical": true, "schema": 5, "missingAlt": 0, "issues": "title length; meta length"}]};
+document.getElementById('score').textContent=DATA.avg_score;
+document.getElementById('scoreText').textContent=DATA.avg_score+'/100';
+document.getElementById('circle').style.setProperty('--score', DATA.avg_score);
+document.getElementById('pages').textContent=DATA.summary.pages;
+const problemCount = DATA.pages.filter(p=>p.issues).length;
+document.getElementById('problems').textContent=problemCount;
+document.getElementById('good').textContent=DATA.pages.filter(p=>p.score>=80).length;
+
+const issueDefs=[
+ ['Missing title',DATA.summary.missing_title,'bad'],
+ ['Missing meta description',DATA.summary.missing_meta,'bad'],
+ ['Missing H1',DATA.summary.missing_h1,'bad'],
+ ['Multiple H1',DATA.summary.multiple_h1,'warn'],
+ ['Missing canonical',DATA.summary.missing_canonical,'warn'],
+ ['Missing schema',DATA.summary.missing_schema,'warn'],
+ ['Low content (<300 words)',DATA.summary.low_content,'warn']
+];
+document.getElementById('issues').innerHTML=issueDefs.map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="num">${x[1]}</div><span class="badge ${x[2]}">${x[1]?'Needs attention':'OK'}</span></div>`).join('');
+
+function renderTable(){
+ const q=document.getElementById('search').value.toLowerCase();
+ const rows=DATA.pages.filter(p=>p.file.toLowerCase().includes(q)||p.title.toLowerCase().includes(q)).sort((a,b)=>a.score-b.score);
+ document.getElementById('table').innerHTML=rows.map(p=>{
+  const badge=p.score>=80?'good':p.score>=60?'warn':'bad';
+  return `<tr><td>${esc(p.file)}<br><small>${esc(p.title||'No title')}</small></td><td><span class="badge ${badge}">${p.score}</span></td><td>${p.words}</td><td>${p.h1}</td><td>${p.canonical?'✓':'✗'}</td><td>${p.schema}</td><td>${esc(p.issues||'—')}</td></tr>`;
+ }).join('');
+}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+renderTable();
+
+let currentAIFix=null;
+
+function pageUrl(file){
+  return 'https://extramilesenergy.in/' + String(file||'').replace(/^\/+/,'');
+}
+function pageKeywords(p){
+  const f=(p.file||'').replace(/\.html$/,'').split('/').pop().replace(/[-_]+/g,' ');
+  const title=(p.title||'').replace(/\|.*$/,'').replace(/[|–—]/g,' ');
+  const words=(title+' '+f).replace(/[^\w\u0900-\u097F\s]/g,' ').split(/\s+/).filter(Boolean);
+  const stop=new Set(['the','for','and','with','in','of','to','a','an','best','extra','miles','energy','2026','india']);
+  return [...new Set(words.filter(w=>w.length>2 && !stop.has(w.toLowerCase())))].slice(0,6);
+}
+function smartTitle(p){
+  const kw=pageKeywords(p);
+  let base=kw.join(' ').replace(/\b\w/g,c=>c.toUpperCase());
+  if(/battery/i.test(p.file+' '+p.title)) return `${base} | Extra Miles Energy`;
+  if(/solar|inverter/i.test(p.file+' '+p.title)) return `${base} | Extra Miles Energy`;
+  return `${base || 'Extra Miles Energy'} | Extra Miles Energy`;
+}
+function smartMeta(p){
+  const kw=pageKeywords(p).slice(0,4).join(', ');
+  return `Explore ${kw || 'lithium batteries and solar solutions'} from Extra Miles Energy. Get specifications, benefits, pricing guidance and expert help for your requirement in India.`;
+}
+function smartH1(p){
+  if(p.title) return p.title.replace(/\s*\|.*$/,'').replace(/[⚡🔋]/g,'').trim();
+  const kw=pageKeywords(p);
+  return kw.length ? kw.map(x=>x[0].toUpperCase()+x.slice(1)).join(' ') : 'Extra Miles Energy';
+}
+function buildSchema(p){
+  const isProduct=/^products\//i.test(p.file);
+  const isBlog=/^(blogs?|blog)\//i.test(p.file);
+  if(isProduct){
+    return `<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"Product",
+  "name":${JSON.stringify((p.title||'').replace(/\s*\|.*$/,''))},
+  "brand":{"@type":"Brand","name":"Extra Miles Energy"},
+  "url":${JSON.stringify(pageUrl(p.file))}
+}
+</script>`;
+  }
+  if(isBlog){
+    return `<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"Article",
+  "headline":${JSON.stringify((p.title||'').replace(/\s*\|.*$/,''))},
+  "author":{"@type":"Organization","name":"Extra Miles Energy"},
+  "publisher":{"@type":"Organization","name":"Extra Miles Energy"},
+  "mainEntityOfPage":${JSON.stringify(pageUrl(p.file))}
+}
+</script>`;
+  }
+  return `<link rel="canonical" href="${pageUrl(p.file)}">`;
+}
+function generateAIFixData(p){
+  const issues=(p.issues||'').split(';').map(x=>x.trim()).filter(Boolean);
+  const fix={
+    file:p.file,
+    url:pageUrl(p.file),
+    current:{title:p.title||'',words:p.words,h1:p.h1,canonical:p.canonical,schema:p.schema,issues},
+    recommendations:[],
+    generatedAt:new Date().toISOString()
+  };
+  if(issues.includes('missing title')||!p.title) fix.recommendations.push({type:'Title',value:smartTitle(p),reason:'Add a clear, search-focused title with the main topic and brand.'});
+  if(issues.includes('title length')) fix.recommendations.push({type:'Title',value:smartTitle(p),reason:'Shorten/rewrite the title to reduce unnecessary length while keeping the primary topic.'});
+  if(issues.includes('missing meta')||issues.includes('meta length')) fix.recommendations.push({type:'Meta description',value:smartMeta(p),reason:'Create a unique description focused on search intent and the page topic.'});
+  if(issues.includes('missing H1')) fix.recommendations.push({type:'H1',value:smartH1(p),reason:'Add exactly one descriptive primary heading.'});
+  if(issues.includes('multiple H1')) fix.recommendations.push({type:'H1',value:smartH1(p),reason:'Keep one primary H1 and convert other top-level headings to H2/H3.'});
+  if(issues.includes('missing canonical')) fix.recommendations.push({type:'Canonical',value:pageUrl(p.file),reason:'Add a self-referencing canonical URL to consolidate duplicate URL signals.'});
+  if(issues.includes('missing schema')) fix.recommendations.push({type:'Schema',value:buildSchema(p),reason:'Add relevant structured data based on the page type.'});
+  if(issues.includes('low content')){
+    fix.recommendations.push({type:'Content',value:`Expand this page beyond ${Math.max(300,p.words||0)} words with useful, original sections covering: ${pageKeywords(p).join(', ') || 'product details, benefits, specifications, FAQs and buying guidance'}.`,reason:'The audit flags thin content; add genuinely useful information rather than filler.'});
+  }
+  fix.recommendations.push({type:'Internal links',value:`Add 2–4 contextual links to relevant Extra Miles Energy pages, using descriptive anchor text around ${pageKeywords(p).slice(0,3).join(', ') || 'the main topic'}.`,reason:'Strengthen topical relationships and crawl paths.'});
+  return fix;
+}
+function openAIFix(mode){
+  const modal=document.getElementById('aiModal');
+  const sel=document.getElementById('aiPageSelect');
+  const candidates=DATA.pages.filter(p=>p.issues).sort((a,b)=>a.score-b.score);
+  sel.innerHTML=candidates.map((p,i)=>`<option value="${i}">${esc(p.file)} — ${p.score}/100</option>`).join('');
+  sel._pages=candidates;
+  modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+  if(mode==='content') {
+    const idx=candidates.findIndex(p=>/low content|missing meta/i.test(p.issues||''));
+    if(idx>=0) sel.value=idx;
+  }
+  generateAIFix();
+}
+function closeAIFix(){
+  const m=document.getElementById('aiModal'); m.classList.remove('open'); m.setAttribute('aria-hidden','true');
+}
+function generateAIFix(){
+  const sel=document.getElementById('aiPageSelect');
+  const p=sel._pages?.[Number(sel.value)];
+  if(!p) return;
+  document.getElementById('aiLoading').style.display='block';
+  setTimeout(()=>{
+    currentAIFix=generateAIFixData(p);
+    document.getElementById('aiLoading').style.display='none';
+    document.getElementById('aiSubtitle').textContent=`${p.file} • Current score ${p.score}/100`;
+    document.getElementById('aiResult').innerHTML=`
+      <div class="card" style="margin-bottom:12px">
+        <div class="label">Detected issues</div>
+        ${(currentAIFix.current.issues.length?currentAIFix.current.issues:['No audit issue']).map(x=>`<div class="issueRow"><span>${esc(x)}</span><span class="badge warn">Fix</span></div>`).join('')}
+      </div>
+      <div class="fixGrid">
+        ${currentAIFix.recommendations.map((r,i)=>`
+          <div class="fixCard">
+            <h3>${esc(r.type)}</h3>
+            <div class="label">${esc(r.reason)}</div>
+            <div class="fixValue" id="fix-${i}">${esc(r.value)}</div>
+            <button class="copyBtn" onclick="copyFix(${i})">Copy</button>
+          </div>`).join('')}
+      </div>
+      <div style="margin-top:12px"><a class="btn" style="display:inline-block;text-decoration:none" href="${esc(currentAIFix.url)}" target="_blank" rel="noopener">Open Live Page ↗</a></div>
+    `;
+  },250);
+}
+function copyFix(i){
+  const r=currentAIFix?.recommendations?.[i]; if(!r)return;
+  navigator.clipboard?.writeText(r.value).then(()=>alert(r.type+' copied.'));
+}
+function downloadAIFix(){
+  if(!currentAIFix){generateAIFix();return;}
+  const blob=new Blob([JSON.stringify(currentAIFix,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='ai-fix-'+currentAIFix.file.replace(/[\/\\]/g,'-').replace(/\.html$/,'')+'.json';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function renderAIQueue(){
+  const el=document.getElementById('aiQueue'); if(!el)return;
+  const rows=DATA.pages.filter(p=>p.issues).sort((a,b)=>a.score-b.score).slice(0,10);
+  el.innerHTML=rows.map((p,i)=>`<div class="issueRow"><div><b>${esc(p.file)}</b><br><small>${esc(p.issues)}</small></div><div style="white-space:nowrap"><span class="badge ${p.score<70?'bad':'warn'}">${p.score}/100</span> <button class="copyBtn" onclick="openAIFix();document.getElementById('aiPageSelect').value=${i};generateAIFix()">AI Fix</button></div></div>`).join('');
+}
+renderAIQueue();
+</script>
+
+<div id="aiModal" class="modal" aria-hidden="true">
+  <div class="modalBox">
+    <div class="modalHead">
+      <div><h2 style="margin:0">✨ AI Fix Suggestions</h2><div id="aiSubtitle" class="label" style="margin-top:4px">Select a page to generate recommendations.</div></div>
+      <button class="closeBtn" onclick="closeAIFix()">×</button>
+    </div>
+    <div class="aiToolbar">
+      <select id="aiPageSelect" class="select"></select>
+      <button class="btn" onclick="generateAIFix()">Generate AI Fix</button>
+      <button class="btn secondary" onclick="downloadAIFix()">Download Fix JSON</button>
+    </div>
+    <div id="aiLoading" class="notice" style="display:none;margin-top:12px">Analysing page signals…</div>
+    <div id="aiResult" style="margin-top:14px"></div>
+    <div class="aiNote">
+      <b>Safe mode:</b> this version never changes your live website automatically. It creates proposed fixes you can review first.
+      For real AI generation, connect a secure server-side AI endpoint later — never put an API secret in this GitHub Pages file.
+    </div>
+  </div>
+</div>
+</body></html>
